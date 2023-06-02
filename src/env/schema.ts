@@ -7,6 +7,7 @@ export const serverScheme = z.object({
   POSTGRES_NAME: z.string(),
   POSTGRES_PASSWORD: z.string(),
   POSTGRES_HOST: z.string(),
+  CLIENT_ADDR: z.string(),
 });
 
 export const clientScheme = z.object({

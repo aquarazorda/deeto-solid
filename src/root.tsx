@@ -15,21 +15,10 @@ import {
 } from "solid-start";
 import { QueryProvider } from "@prpc/solid";
 import { QueryClient } from "@tanstack/solid-query";
-import { createChainedI18nContext } from "@solid-primitives/i18n";
-import dictionaries from "./env/i18n/dictionaries";
+import { I18nProvider } from './env/i18n';
 
 const queryClient = new QueryClient();
 
-const [I18nProvider, useI18nContext] = createChainedI18nContext({
-  dictionaries,
-  locale: "en",
-});
-
-export const useI18n = () => {
-  const context = useI18nContext();
-  if (!context) throw new Error("useI18n must be used within an I18nProvider");
-  return context;
-};
 
 export default function Root() {
   return (

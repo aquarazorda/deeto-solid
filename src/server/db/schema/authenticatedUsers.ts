@@ -1,8 +1,9 @@
-import { pgTable, serial, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, varchar } from "drizzle-orm/pg-core";
 import { UserStatusEnum } from "~/server/enums/userStatus";
 
 export const authenticatedUsers = pgTable("AuthenticatedUsers", {
-  authenticatedUserId: serial("id").primaryKey(),
+  authenticatedUserId: uuid("authenticatedUserId").primaryKey(),
+  cognitoUserId: uuid("cognitoUserId").notNull(),
   email: varchar("email", { length: 255 }),
   userStatus: text("text", { enum: Object.values(UserStatusEnum) as [string, ...string[]] }).notNull(),
 });
