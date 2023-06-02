@@ -1,11 +1,11 @@
-import { pgTable, text, varchar, uuid } from "drizzle-orm/pg-core";
+import { varchar, uuid, pgSchema } from "drizzle-orm/pg-core";
 
-export const userAccounts = pgTable("UserAccounts", {
+const deetoroutingSchema = pgSchema("deetorouting");
+
+export const userAccounts = deetoroutingSchema.table("UserAccounts", {
   userAccountId: uuid('userAccountId').primaryKey(),
   authenticatedUserId: uuid('authenticatedUserId').notNull(),
   vendorId: uuid('vendorId').notNull(),
-  username: varchar("username", { length: 255 }),
-  password: text("password"),
-  schemaName: varchar("schemaName", { length: 255 }),
   cognitoId: uuid("cognitoId").notNull(),
+  schemaName: varchar("schemaName", { length: 255 }),
 });

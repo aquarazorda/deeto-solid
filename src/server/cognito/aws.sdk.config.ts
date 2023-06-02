@@ -4,7 +4,12 @@ import { serverEnv } from '~/env/server';
 
 AWS.config.update({ region: serverEnv.REGION });
 
-export const cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider();
+export const cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider({
+  credentials: {
+    accessKeyId: serverEnv.AWS_ACCESS_KEY_ID,
+    secretAccessKey: serverEnv.AWS_ACCESS_KEY_SECRET,
+  }
+});
 
 export const getS3Client = () => {
   return new S3Client({ region: serverEnv.REGION });

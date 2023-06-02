@@ -13,25 +13,24 @@ import { UserStatusEnum } from "../enums/userStatus";
 export const cognitoGetDefaultAccount = async (email: string) => {
   const cognitoUser = await cognitoAdminGetUser(email);
   const cognitoId = cognitoUser.Username;
-  const accounts = await db
-    .select()
-    .from(userAccounts)
-    .where(eq(userAccounts.cognitoId, cognitoId));
+
+  const accounts = await db.query.userAccounts.findMany({
+    where: eq(userAccounts.cognitoId, cognitoId),
+  });
 
   const unblockedAccounts = await Promise.all(
     accounts.filter(async (account) => {
-      const currentUser = (
-        await db
-          .select()
-          .from(authenticatedUsers)
-          .where(
-            eq(authenticatedUsers.authenticatedUserId, account.userAccountId)
-          )
-      )[0];
+      const currentUser = await db.query.authenticatedUsers.findFirst({
+        where: eq(
+          authenticatedUsers.authenticatedUserId,
+          account.authenticatedUserId
+        ),
+      });
 
       if (
-        currentUser.userStatus === UserStatusEnum.CONFIRMED ||
-        currentUser.userStatus === UserStatusEnum.PENDING
+        currentUser &&
+        (currentUser.userStatus === UserStatusEnum.CONFIRMED ||
+          currentUser.userStatus === UserStatusEnum.PENDING)
       ) {
         return true;
       }

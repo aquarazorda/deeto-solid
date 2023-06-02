@@ -7,10 +7,13 @@ export const generateLink = async (
   authenticatedUserId?: string
 ) => {
   const userAccount = await cognitoGetDefaultAccount(email);
+
   if (!userAccount) {
     // no account returned from routing service, the account must be locked or deleted
     throw new Error(ErrorsEnum.USER_LOCKED);
   }
+
+  // TODO add logic for email sending
 
   return userAccount;
 };
