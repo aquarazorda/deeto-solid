@@ -11,7 +11,33 @@ module.exports = {
       },
       boxShadow: {
         'primary-input': "rgba(59, 0, 135, 0.22) 0px 0px 0.625rem inset" 
-      }
+      },
+      animation: {
+        'contentShow': 'contentShow 250ms ease-out',
+        'contentHide': 'contentHide 250ms ease-in forwards',
+      },
+      keyframes: {
+        contentShow: {
+          from: {
+            opacity: 0,
+            transform: 'scale(0.96)',
+          },
+          to: {
+            opacity: 1,
+            transform: 'scale(1)',
+          },
+        },
+        contentHide: {
+          from: {
+            opacity: 1,
+            transform: 'scale(1)',
+          },
+          to: {
+            opacity: 0,
+            transform: 'scale(0.96)',
+          },
+        },
+      },
     },
     colors: {
       "white": "#FFFFFF",
@@ -24,5 +50,7 @@ module.exports = {
       inter: "Inter, sans-serif",
     }
   },
-  plugins: [],
+  plugins: [
+    require("@kobalte/tailwindcss")
+  ],
 };

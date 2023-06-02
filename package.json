@@ -16,6 +16,7 @@
     "autoprefixer": "^10.4.14",
     "eslint": "^8.41.0",
     "eslint-plugin-solid": "^0.12.1",
+    "eslint-plugin-tailwindcss": "^3.12.1",
     "postcss": "^8.4.24",
     "solid-start-node": "^0.2.26",
     "solid-start-vercel": "^0.2.26",
@@ -26,6 +27,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.344.0",
     "@kobalte/core": "^0.9.6",
+    "@kobalte/tailwindcss": "^0.6.5",
     "@modular-forms/solid": "^0.17.0",
     "@prpc/solid": "^0.2.33",
     "@prpc/vite": "^0.3.21",
