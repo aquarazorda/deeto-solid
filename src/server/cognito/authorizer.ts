@@ -8,6 +8,8 @@ import jwt from "jsonwebtoken";
 import jwkToPem from "jwk-to-pem";
 import { UserStatusEnum } from "../enums/userStatus";
 import { authenticatedUsers } from "../db/schema/authenticatedUsers";
+import type { Either} from 'fp-ts/lib/Either';
+import { left, right } from 'fp-ts/lib/Either';
 
 type TokenPayload = {
   sub: string;
@@ -17,6 +19,12 @@ type TokenPayload = {
   cognitoId: string;
 };
 
+export type AuthorizerResponse = Either<string,{
+  authenticatedUserId: string,
+  vendorId: string,
+  cognitoId: string,  
+}>;
+
 const loadJWK = async (region: string, poolId: string) => {
   const addr = `https://cognito-idp.${region}.amazonaws.com/${poolId}/.well-known/jwks.json`;
   const response = await fetch(addr, { method: "GET" });
@@ -24,12 +32,12 @@ const loadJWK = async (region: string, poolId: string) => {
   return (await response.json()) as { keys: jwkToPem.JWK[] };
 };
 
-const authorizer = middleware$(async ({ request$ }) => {
+const authorizer = middleware$(async ({ request$ }): Promise<AuthorizerResponse> => {
   const cookies = parse(request$.headers.get("cookie") || "");
   const token = cookies.accessToken;
 
   if (!token) {
-    throw new Error("Authorization cookie cannot be empty");
+    return left("No token");
   }
 
   let tokenPayload = {} as TokenPayload;
@@ -47,7 +55,7 @@ const authorizer = middleware$(async ({ request$ }) => {
     });
 
     if (!userAccount) {
-      throw new Error("Unauthorized");
+      return left("No user account");
     }
 
     tokenPayload = {
@@ -72,7 +80,7 @@ const authorizer = middleware$(async ({ request$ }) => {
   }
 
   if (err) {
-    throw new Error("Unauthorized");
+    return left("Invalid token");
   }
 
   const user = await db.query.authenticatedUsers.findFirst({
@@ -88,13 +96,12 @@ const authorizer = middleware$(async ({ request$ }) => {
   // include: [{ model: AccountContact, include: [{ model: Account }] }, { model: VendorContact }],
 
   if (!user || user.userStatus === UserStatusEnum.LOCKED) {
-    throw new Error("Unauthorized");
+    return left("User not found or locked");
   }
 
   const requestContext = {
     authenticatedUserId: tokenPayload.authenticatedUserId,
     vendorId: tokenPayload.vendorId,
-    databasePath: tokenPayload.databasePath,
     cognitoId: tokenPayload.cognitoId,
   };
 
@@ -111,7 +118,7 @@ const authorizer = middleware$(async ({ request$ }) => {
   //   requestContext.accountContactIds = JSON.stringify(accountContactIds);
   // }
 
-  return requestContext;
+  return right(requestContext);
 });
 
 export default authorizer;

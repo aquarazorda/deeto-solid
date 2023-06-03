@@ -15,10 +15,10 @@ import {
 } from "solid-start";
 import { QueryProvider } from "@prpc/solid";
 import { QueryClient } from "@tanstack/solid-query";
-import { I18nProvider } from './env/i18n';
+import { I18nProvider } from "./env/i18n";
+import UserProvider from "./providers/userProvider";
 
 const queryClient = new QueryClient();
-
 
 export default function Root() {
   return (
@@ -49,9 +49,11 @@ export default function Root() {
           <QueryProvider queryClient={queryClient}>
             <Suspense>
               <ErrorBoundary>
-                <Routes>
-                  <FileRoutes />
-                </Routes>
+                <UserProvider>
+                  <Routes>
+                    <FileRoutes />
+                  </Routes>
+                </UserProvider>
               </ErrorBoundary>
             </Suspense>
           </QueryProvider>
