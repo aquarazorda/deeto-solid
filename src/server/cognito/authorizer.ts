@@ -1,124 +1,56 @@
 import { middleware$ } from "@prpc/solid";
 import { parse } from "cookie";
-import { serverEnv } from "~/env/server";
-import { db } from "../db";
-import { userAccounts } from "../db/schema/users";
-import { and, eq } from "drizzle-orm";
-import jwt from "jsonwebtoken";
-import jwkToPem from "jwk-to-pem";
 import { UserStatusEnum } from "../enums/userStatus";
-import { authenticatedUsers } from "../db/schema/authenticatedUsers";
-import type { Either} from 'fp-ts/lib/Either';
-import { left, right } from 'fp-ts/lib/Either';
+import type { Either } from "fp-ts/lib/Either";
+import { left, right, fromNullable } from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import {
+  chain,
+  fromEither,
+  chainEitherK,
+} from "fp-ts/lib/TaskEither";
+import { decodeToken } from './token';
+import { getUserWithCognito } from '../services/authenticatedUser';
 
-type TokenPayload = {
-  sub: string;
-  authenticatedUserId: string;
-  vendorId: string;
-  databasePath: "/";
-  cognitoId: string;
-};
-
-export type AuthorizerResponse = Either<string,{
-  authenticatedUserId: string,
-  vendorId: string,
-  cognitoId: string,  
-}>;
-
-const loadJWK = async (region: string, poolId: string) => {
-  const addr = `https://cognito-idp.${region}.amazonaws.com/${poolId}/.well-known/jwks.json`;
-  const response = await fetch(addr, { method: "GET" });
-  
-  return (await response.json()) as { keys: jwkToPem.JWK[] };
-};
-
-const authorizer = middleware$(async ({ request$ }): Promise<AuthorizerResponse> => {
-  const cookies = parse(request$.headers.get("cookie") || "");
-  const token = cookies.accessToken;
-
-  if (!token) {
-    return left("No token");
+export type AuthorizerResponse = Either<
+  string,
+  {
+    authenticatedUserId: string;
+    vendorId: string;
+    cognitoId: string;
   }
+>;
 
-  let tokenPayload = {} as TokenPayload;
-  let err;
+const authorizer = middleware$(
+  async ({ request$ }): Promise<AuthorizerResponse> => {
+    const cookies = parse(request$.headers.get("cookie") || "");
+    const token = cookies.accessToken;
 
-  if (
-    (serverEnv.CLIENT_ADDR.includes("dev") ||
-      serverEnv.CLIENT_ADDR.includes("staging")) &&
-    token.includes("deeto-dev")
-  ) {
-    const tryingToAuthenticateWith = token.split("deeto-dev-")[1];
+    return pipe(
+      fromNullable("Token not found")(token),
+      fromEither,
+      chain(decodeToken),
+      chain(getUserWithCognito),
+      chainEitherK(({ user, tokenPayload }) =>
+        !user || user.userStatus === UserStatusEnum.LOCKED
+          ? left("User not found or locked")
+          : right(tokenPayload)
+      )
+    )();
 
-    const userAccount = await db.query.userAccounts.findFirst({
-      where: eq(userAccounts.userAccountId, tryingToAuthenticateWith),
-    });
+    // TODO
+    // if (user?.vendorContact?.vendorContactId) {
+    //   requestContext.vendorContactId = user?.vendorContact?.vendorContactId;
+    // }
 
-    if (!userAccount) {
-      return left("No user account");
-    }
-
-    tokenPayload = {
-      sub: "deeto-vendor",
-      authenticatedUserId: userAccount.authenticatedUserId,
-      vendorId: userAccount.vendorId,
-      databasePath: "/",
-      cognitoId: userAccount.cognitoId,
-    };
-  } else {
-    try {
-      const jwk = await loadJWK(serverEnv.REGION, serverEnv.USER_POOL_ID);
-      const pem = jwkToPem(jwk.keys[0]);
-
-      tokenPayload = jwt.verify(token, pem, {
-        algorithms: ["RS256"],
-      }) as TokenPayload;
-    } catch (error) {
-      console.log(error);
-      err = error;
-    }
+    // Authorizer response context values must be of type string, number, or boolean
+    // const accountContactIds = user?.accountContacts?.map(
+    //   (el) => el.accountContactId
+    // );
+    // if (accountContactIds?.length) {
+    //   requestContext.accountContactIds = JSON.stringify(accountContactIds);
+    // }
   }
-
-  if (err) {
-    return left("Invalid token");
-  }
-
-  const user = await db.query.authenticatedUsers.findFirst({
-    where: and(
-      eq(
-        authenticatedUsers.authenticatedUserId,
-        tokenPayload?.authenticatedUserId
-      ),
-      eq(authenticatedUsers.cognitoUserId, tokenPayload.sub)
-    ),
-  });
-  // TODO
-  // include: [{ model: AccountContact, include: [{ model: Account }] }, { model: VendorContact }],
-
-  if (!user || user.userStatus === UserStatusEnum.LOCKED) {
-    return left("User not found or locked");
-  }
-
-  const requestContext = {
-    authenticatedUserId: tokenPayload.authenticatedUserId,
-    vendorId: tokenPayload.vendorId,
-    cognitoId: tokenPayload.cognitoId,
-  };
-
-  // TODO
-  // if (user?.vendorContact?.vendorContactId) {
-  //   requestContext.vendorContactId = user?.vendorContact?.vendorContactId;
-  // }
-
-  // Authorizer response context values must be of type string, number, or boolean
-  // const accountContactIds = user?.accountContacts?.map(
-  //   (el) => el.accountContactId
-  // );
-  // if (accountContactIds?.length) {
-  //   requestContext.accountContactIds = JSON.stringify(accountContactIds);
-  // }
-
-  return right(requestContext);
-});
+);
 
 export default authorizer;
