@@ -6,8 +6,8 @@ import path from "path";
   
 export default defineConfig(() => {
   return {
-    // plugins: [prpc(), solid({ ssr: true, adapter: vercel({ edge: false }) })],
-    plugins: [prpc(), solid({ ssr: true })],
+    plugins: [prpc(), solid({ ssr: true, adapter: vercel({ edge: false }) })],
+    // plugins: [prpc(), solid({ ssr: true })],
     resolve: {
       alias: {
         rpc: path.join(__dirname, "src", "server", "api"),
