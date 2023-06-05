@@ -18,6 +18,9 @@ function Home() {
       <Match when={user?.isVendor}>
         <Navigate href="/vendor" />
       </Match>
+      <Match when={user}>
+        <Navigate href="/" />
+      </Match>
     </Switch>
   );
 }

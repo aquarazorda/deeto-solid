@@ -20,7 +20,8 @@ export const getMe$ = () =>
       );
 
       return getOrElseW(() => undefined)(await res());
-    })
+    }),
+    { deferStream: true }
   );
 
 // export const getMe = query$({
