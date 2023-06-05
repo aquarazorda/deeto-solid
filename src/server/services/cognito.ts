@@ -2,11 +2,16 @@ import { serverEnv } from "~/env/server";
 import { cognitoClient } from "../cognito/aws.sdk.config";
 import { db } from "../db";
 import { userAccounts } from "../db/schema/users";
+import type { InferModel } from "drizzle-orm";
 import { and, eq, or } from "drizzle-orm";
 import { authenticatedUsers } from "../db/schema/authenticatedUsers";
 import { UserStatusEnum } from "../enums/userStatus";
 import type { AdminGetUserCommandOutput } from "@aws-sdk/client-cognito-identity-provider";
-import { AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
+import {
+  AdminGetUserCommand,
+  AdminRespondToAuthChallengeCommand,
+  InitiateAuthCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
 import {
   tryCatch,
   chain,
@@ -15,8 +20,17 @@ import {
 } from "fp-ts/lib/TaskEither";
 import { flow, pipe } from "fp-ts/lib/function";
 import type { ExtractFromTE } from "~/types/utils";
-import { fromNullable } from "fp-ts/lib/Either";
+import { fromNullable, left, right } from "fp-ts/lib/Either";
 import { ErrorsEnum } from "../enums/errors";
+import { REFRESH_TOKEN_SEPARATOR } from "../utils/constants";
+
+type CustomAuthParams = {
+  AuthFlow: string;
+  AuthParameters: {
+    USERNAME?: string;
+    REFRESH_TOKEN?: string;
+  };
+};
 
 const cognitoAdminGetUser = (username: string) => {
   const command = new AdminGetUserCommand({
@@ -27,6 +41,41 @@ const cognitoAdminGetUser = (username: string) => {
   return tryCatch(
     () => cognitoClient.send(command),
     () => ErrorsEnum.COGNITO_USER_NOT_FOUND
+  );
+};
+
+export const initiateCustomAuth = (params: CustomAuthParams) => {
+  const command = new InitiateAuthCommand({
+    ...params,
+    ClientId: serverEnv.CLIENT_ID,
+  });
+
+  return tryCatch(
+    () => cognitoClient.send(command),
+    () => ErrorsEnum.UNAUTHORIZED
+  );
+};
+
+const respondToAuthChallenge = (
+  username: string,
+  session?: string,
+  metadata?: Record<string, string>
+) => {
+  const command = new AdminRespondToAuthChallengeCommand({
+    ChallengeName: "CUSTOM_CHALLENGE",
+    ClientId: serverEnv.CLIENT_ID,
+    UserPoolId: serverEnv.USER_POOL_ID,
+    ChallengeResponses: {
+      USERNAME: username,
+      ANSWER: "_",
+    },
+    ClientMetadata: metadata,
+    Session: session,
+  });
+
+  return tryCatch(
+    () => cognitoClient.send(command),
+    () => ErrorsEnum.INVALID_MAGIC_LINK
   );
 };
 
@@ -43,6 +92,43 @@ const queryWithCognitoId = (data: AdminGetUserCommandOutput) =>
       )
     )
   );
+
+export const loginPasswordLess = (user: {
+  cognitoUserId: string;
+  authenticatedUserId: string;
+}) => {
+  return pipe(
+    initiateCustomAuth({
+      AuthFlow: "CUSTOM_AUTH",
+      AuthParameters: {
+        USERNAME: user.cognitoUserId,
+      },
+    }),
+    chain((data) =>
+      respondToAuthChallenge(user.cognitoUserId, data.Session, {
+        // vendor_id: user.vendorId,
+        authenticated_user_id: user.authenticatedUserId,
+        cognito_id: user.cognitoUserId,
+      })
+    ),
+    chainEitherK((res) => {
+      if (
+        !res.AuthenticationResult ||
+        !res.AuthenticationResult?.AccessToken ||
+        !res.AuthenticationResult?.RefreshToken
+      ) {
+        return left(ErrorsEnum.INVALID_MAGIC_LINK);
+      }
+
+      const refreshToken = res.AuthenticationResult.RefreshToken;
+
+      return right({
+        AccessToken: res.AuthenticationResult.AccessToken,
+        RefreshToken: `${refreshToken}${REFRESH_TOKEN_SEPARATOR}${user.authenticatedUserId}`,
+      });
+    })
+  );
+};
 
 const queryAuthenticatedUsers = (
   accounts: ExtractFromTE<ReturnType<typeof queryWithCognitoId>>

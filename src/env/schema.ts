@@ -8,6 +8,7 @@ export const serverScheme = z.object({
   POSTGRES_PASSWORD: z.string(),
   POSTGRES_HOST: z.string(),
   CLIENT_ADDR: z.string(),
+  CLIENT_ID: z.string(),
   AWS_ACCESS_KEY_ID: z.string(),
   AWS_ACCESS_KEY_SECRET: z.string()
 });

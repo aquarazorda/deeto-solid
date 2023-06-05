@@ -37,6 +37,7 @@ export enum ErrorsEnum {
   INVALID_STATUS_FOR_A_USER = 'The status is not valid for a user',
   MISSING_REQUIRED_FIELD = 'Missing required field',
   NO_OBJECT_FOUND = 'No object found',
+  MISSING_ACCESS_TOKEN = 'Missing access token',
   MISSING_REFRESH_TOKEN = 'Missing refresh token',
   INVALID_DROPDOWN_TYPE_OR_NO_CUSTOM_FIELD_VALUES = 'Invalid dropdown type or no custom field values',
   USER_MUST_BE_A_VENDOR_ADMIN = 'The logged in user must be a vendor admin',

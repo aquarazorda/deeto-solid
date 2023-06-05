@@ -1,25 +1,24 @@
-import { authorizer$, getAccessToken } from "../cognito/authorizer";
-import { getByIdWithRolesAndAvatar } from "../services/authenticatedUser";
-import { withAuthUserId } from "../utils/response";
+import { authorizer$, getTokens } from "../cognito/authorizer";
 import server$ from "solid-start/server";
 import { createResource } from "solid-js";
 import { useServerContext } from 'solid-start';
 import { getOrElseW } from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/function';
-import { chain } from 'fp-ts/lib/TaskEither';
+import { useMagicLink } from '../services/link';
 
 export const getMe$ = () =>
   createResource(
     server$(async () => {
       const server = useServerContext();
-      const token = getAccessToken(server.request.headers.get("cookie"));
-      const res = pipe(
-        token,
-        chain(authorizer$),
-        chain(withAuthUserId(getByIdWithRolesAndAvatar))
-      );
+      const url = new URL(server.request.url);
+      const searchParams = new URLSearchParams(url.search);
+      const ml = searchParams.get("ml");
+      const tokens = getTokens(server.request.headers.get("cookie"));
 
-      return getOrElseW(() => undefined)(await res());
-    }),
-    // { deferStream: true }
+      const res = await (ml ? useMagicLink(ml) : authorizer$(tokens))();
+      const user = getOrElseW(() => undefined)(res);
+      
+      server.responseHeaders.set("Set-Cookie", `accessToken=${user?.accessToken}; HttpOnly; Path=/; refreshToken=${user?.refreshToken}; HttpOnly; Path=/`);
+
+      return user;
+    })
   );

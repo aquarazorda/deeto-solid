@@ -1,12 +1,12 @@
 import { tryCatch, map, chain, chainEitherK } from "fp-ts/lib/TaskEither";
 import jwt from "jsonwebtoken";
 import jwkToPem from "jwk-to-pem";
+import type { Right} from "fp-ts/lib/Either";
 import { left, right } from "fp-ts/lib/Either";
 import { serverEnv } from "~/env/server";
-import { db } from "../db";
 import { pipe } from "fp-ts/lib/function";
-import { userAccounts } from "../db/schema/users";
-import { eq } from "drizzle-orm";
+import { ErrorsEnum } from '../enums/errors';
+import { queryUserAccount } from './authorizer';
 
 export type TokenPayload = {
   sub: string;
@@ -22,7 +22,7 @@ const loadJWK = (region: string, poolId: string) => {
     (res) => res.json() as Promise<{ keys: jwkToPem.JWK[] }>
   );
 
-  return tryCatch(() => res, String);
+  return tryCatch(() => res, () => ErrorsEnum.INTERNAL_SERVER_ERROR);
 };
 
 const loadJWT = (token: string, pem: string) =>
@@ -32,9 +32,11 @@ const loadJWT = (token: string, pem: string) =>
     })) as Promise<TokenPayload>;
 
     return payload;
-  }, String);
+  }, () => ErrorsEnum.UNAUTHORIZED);
 
-export const decodeToken = (token: string) => {
+export const decodeToken = (tokenR: Right<string>) => {
+  const token = tokenR.right;
+  
   if (
     /localhost|dev|staging/.test(serverEnv.CLIENT_ADDR) &&
     token.startsWith("deeto-dev-")
@@ -42,13 +44,7 @@ export const decodeToken = (token: string) => {
     const tryingToAuthenticateWith = token.split("deeto-dev-")[1];
 
     return pipe(
-      tryCatch(
-        () =>
-          db.query.userAccounts.findFirst({
-            where: eq(userAccounts.userAccountId, tryingToAuthenticateWith),
-          }),
-        () => "DB Error"
-      ),
+      queryUserAccount(tryingToAuthenticateWith),
       chainEitherK((userAccount) =>
         userAccount
           ? right({
@@ -58,7 +54,7 @@ export const decodeToken = (token: string) => {
               databasePath: "/",
               cognitoId: userAccount.cognitoId,
             })
-          : left("No user account found")
+          : left(ErrorsEnum.USER_DONT_EXITS)
       )
     );
   } else {
