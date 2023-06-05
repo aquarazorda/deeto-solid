@@ -15,6 +15,8 @@ module.exports = {
       animation: {
         'contentShow': 'contentShow 250ms ease-out',
         'contentHide': 'contentHide 250ms ease-in forwards',
+        'rotate': 'rotate 2s linear infinite',
+        'dash': 'dash 1.5s ease-in-out infinite'
       },
       keyframes: {
         contentShow: {
@@ -37,6 +39,25 @@ module.exports = {
             transform: 'scale(0.96)',
           },
         },
+        rotate: {
+          to: {
+            transform: 'rotate(360deg)'
+          }
+        },
+        dash: {
+          "0%": {
+            "stroke-dasharray": "1, 150",
+            "stroke-dashoffset": 0
+          },
+          "50%": {
+            "stroke-dasharray": "90, 150",
+            "stroke-dashoffset": -35
+          },
+          "100%": {
+            "stroke-dasharray": "90, 150",
+            "stroke-dashoffset": -124
+          }
+        }
       },
     },
     colors: {

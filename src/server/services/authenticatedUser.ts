@@ -44,7 +44,16 @@ export const getByIdWithRolesAndAvatar = (authenticatedUserId: string) => {
         throw new Error(`User not found`);
       }
 
-      return user;
+      const { authenticatedUserPrivileges, ...rest } = user;
+      const userPrivileges = authenticatedUserPrivileges.map(({ userPrivileges }) => userPrivileges);
+
+      return {
+        ...rest,
+        userPrivileges,
+        isVendor: userPrivileges.includes('vendor'),
+        isProspect: userPrivileges.includes('prospect'),
+        isReference: userPrivileges.includes('reference'),
+      };
     });
 
   return tryCatch(() => query, String);

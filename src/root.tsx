@@ -17,6 +17,7 @@ import { QueryProvider } from "@prpc/solid";
 import { QueryClient } from "@tanstack/solid-query";
 import { I18nProvider } from "./env/i18n";
 import UserProvider from "./providers/userProvider";
+import { FullPageSpinner } from './components/loaders/Spinner';
 
 const queryClient = new QueryClient();
 
@@ -47,14 +48,14 @@ export default function Root() {
       <Body class="font-sans">
         <I18nProvider>
           <QueryProvider queryClient={queryClient}>
-            <Suspense>
-              <ErrorBoundary>
-                <UserProvider>
+            <Suspense fallback={<FullPageSpinner />}>
+              <UserProvider>
+                <ErrorBoundary>
                   <Routes>
                     <FileRoutes />
                   </Routes>
-                </UserProvider>
-              </ErrorBoundary>
+                </ErrorBoundary>
+              </UserProvider>
             </Suspense>
           </QueryProvider>
         </I18nProvider>
