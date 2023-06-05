@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createServerAction$ } from 'solid-start/server';
 import { generateLink } from '../services/link';
+import { left } from 'fp-ts/lib/Either';
+import { ErrorsEnum } from '../enums/errors';
 
 const emailSchema = z.string().email();
 
@@ -9,10 +11,8 @@ export const loginWithEmailForm = () => createServerAction$(async (formData: For
   const validation = emailSchema.safeParse(email);
   
   if (!validation.success) {
-    return { success: false, message: "Invalid email address" };
+    return left(ErrorsEnum.DEETO_USERS_ONLY);
   }
-  
-  generateLink(email, 'login');
 
-  return { success: true, message: "Email sent" };
+  return await generateLink(email, '/')();
 });

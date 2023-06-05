@@ -1,63 +1,73 @@
-import type {
-  AdminGetUserRequest,
-  AdminGetUserResponse,
-} from "aws-sdk/clients/cognitoidentityserviceprovider";
 import { serverEnv } from "~/env/server";
-import { cognitoIdentityServiceProvider } from "../cognito/aws.sdk.config";
+import { cognitoClient } from "../cognito/aws.sdk.config";
 import { db } from "../db";
 import { userAccounts } from "../db/schema/users";
-import { eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { authenticatedUsers } from "../db/schema/authenticatedUsers";
 import { UserStatusEnum } from "../enums/userStatus";
+import type { AdminGetUserCommandOutput } from "@aws-sdk/client-cognito-identity-provider";
+import { AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
+import {
+  tryCatch,
+  chain,
+  fromNullable as fromNullableTE,
+  chainEitherK,
+} from "fp-ts/lib/TaskEither";
+import { flow, pipe } from "fp-ts/lib/function";
+import type { ExtractFromTE } from "~/types/utils";
+import { fromNullable } from "fp-ts/lib/Either";
+import { ErrorsEnum } from "../enums/errors";
 
-export const cognitoGetDefaultAccount = async (email: string) => {
-  const cognitoUser = await cognitoAdminGetUser(email);
-  const cognitoId = cognitoUser.Username;
-
-  const accounts = await db.query.userAccounts.findMany({
-    where: eq(userAccounts.cognitoId, cognitoId),
-  });
-
-  const unblockedAccounts = await Promise.all(
-    accounts.filter(async (account) => {
-      const currentUser = await db.query.authenticatedUsers.findFirst({
-        where: eq(
-          authenticatedUsers.authenticatedUserId,
-          account.authenticatedUserId
-        ),
-      });
-
-      if (
-        currentUser &&
-        (currentUser.userStatus === UserStatusEnum.CONFIRMED ||
-          currentUser.userStatus === UserStatusEnum.PENDING)
-      ) {
-        return true;
-      }
-      return false;
-    })
-  );
-  return unblockedAccounts.find((acc) => !!acc);
-};
-
-const cognitoAdminGetUser = (
-  username: string
-): Promise<AdminGetUserResponse> => {
-  const adminGetUserParams: AdminGetUserRequest = {
+const cognitoAdminGetUser = (username: string) => {
+  const command = new AdminGetUserCommand({
     UserPoolId: serverEnv.USER_POOL_ID,
     Username: username,
-  };
-
-  return new Promise((resolve, reject) => {
-    cognitoIdentityServiceProvider.adminGetUser(
-      adminGetUserParams,
-      (err, data) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(data);
-        }
-      }
-    );
   });
+
+  return tryCatch(
+    () => cognitoClient.send(command),
+    () => ErrorsEnum.COGNITO_USER_NOT_FOUND
+  );
 };
+
+const queryWithCognitoId = (data: AdminGetUserCommandOutput) =>
+  pipe(
+    fromNullableTE(ErrorsEnum.COGNITO_USER_NOT_FOUND)(data.Username),
+    chain((username: string) =>
+      tryCatch(
+        () =>
+          db.query.userAccounts.findMany({
+            where: eq(userAccounts.cognitoId, username),
+          }),
+        () => ErrorsEnum.COGNITO_USER_DOES_NOT_MATCH
+      )
+    )
+  );
+
+const queryAuthenticatedUsers = (
+  accounts: ExtractFromTE<ReturnType<typeof queryWithCognitoId>>
+) =>
+  tryCatch(
+    () =>
+      db.query.authenticatedUsers.findFirst({
+        where: and(
+          or(
+            eq(authenticatedUsers.userStatus, UserStatusEnum.CONFIRMED),
+            eq(authenticatedUsers.userStatus, UserStatusEnum.PENDING)
+          ),
+          or(
+            ...accounts.map(({ authenticatedUserId }) =>
+              eq(authenticatedUsers.authenticatedUserId, authenticatedUserId)
+            )
+          )
+        ),
+      }),
+    () => ErrorsEnum.AUTHENTICATED_USER_NOT_FOUND
+  );
+
+export const cognitoGetDefaultAccount = flow(
+  cognitoAdminGetUser,
+  chain(queryWithCognitoId),
+  chain(queryAuthenticatedUsers),
+  chainEitherK(fromNullable(ErrorsEnum.AUTHENTICATED_USER_NOT_FOUND))
+);

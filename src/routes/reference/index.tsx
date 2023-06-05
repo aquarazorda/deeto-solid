@@ -21,7 +21,7 @@ export default function ReferenceDashboard() {
           <ul class="flex flex-col gap-2 font-medium text-white">
             <li>
               <A
-                href="/reference"
+                href="/"
                 class="flex flex-col items-center justify-center gap-1"
                 activeClass="text-primary-yellow"
               >
@@ -31,7 +31,7 @@ export default function ReferenceDashboard() {
             </li>
             <li>
               <A
-                href="./rewards"
+                href="/reference/rewards"
                 class="flex flex-col items-center justify-center gap-1"
                 activeClass="text-primary-yellow"
               >

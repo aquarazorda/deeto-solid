@@ -21,13 +21,5 @@ export const getMe$ = () =>
 
       return getOrElseW(() => undefined)(await res());
     }),
-    { deferStream: true }
+    // { deferStream: true }
   );
-
-// export const getMe = query$({
-//   key: "getMe",
-//   middlewares: [authorizer],
-//   queryFn: ({ ctx$ }) => {
-//     return pipe(ctx$, withAuthUserId(getByIdWithRolesAndAvatar));
-//   },
-// });

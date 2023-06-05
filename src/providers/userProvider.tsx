@@ -1,5 +1,5 @@
 import type { JSX, ResourceActions } from "solid-js";
-import { Suspense, createContext, useContext } from "solid-js";
+import { createContext, useContext } from "solid-js";
 import { getMe$ } from "~/server/api/user";
 import type { getByIdWithRolesAndAvatar } from "~/server/services/authenticatedUser";
 import type { ExtractFromTE } from "~/types/utils";

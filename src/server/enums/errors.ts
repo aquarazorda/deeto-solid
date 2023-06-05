@@ -51,4 +51,8 @@ export enum ErrorsEnum {
   MEDIA_NOT_SUPPORTED = 'Media not supported',
 
   MAPPING_SETTING_DOES_NOT_EXIST = 'Mapping settings does not exist',
+
+  COGNITO_USER_NOT_FOUND = 'Cognito user not found',
+  COGNITO_USER_DOES_NOT_MATCH = 'Cognito user does not match',
+  AUTHENTICATED_USER_NOT_FOUND = 'Authenticated user not found',
 }
