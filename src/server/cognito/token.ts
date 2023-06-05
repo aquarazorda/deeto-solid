@@ -1,17 +1,12 @@
-import {
-  tryCatch,
-  map,
-  chain,
-  chainEitherK,
-} from "fp-ts/lib/TaskEither";
+import { tryCatch, map, chain, chainEitherK } from "fp-ts/lib/TaskEither";
 import jwt from "jsonwebtoken";
 import jwkToPem from "jwk-to-pem";
-import { left, right } from 'fp-ts/lib/Either';
-import { serverEnv } from '~/env/server';
-import { db } from '../db';
-import { pipe } from 'fp-ts/lib/function';
-import { userAccounts } from '../db/schema/users';
-import { eq } from 'drizzle-orm';
+import { left, right } from "fp-ts/lib/Either";
+import { serverEnv } from "~/env/server";
+import { db } from "../db";
+import { pipe } from "fp-ts/lib/function";
+import { userAccounts } from "../db/schema/users";
+import { eq } from "drizzle-orm";
 
 export type TokenPayload = {
   sub: string;
@@ -30,22 +25,19 @@ const loadJWK = (region: string, poolId: string) => {
   return tryCatch(() => res, String);
 };
 
-const loadJWT = (token: string, pem: string) => tryCatch(
-  async () => {
-    const payload = await jwt.verify(token, pem, {
+const loadJWT = (token: string, pem: string) =>
+  tryCatch(async () => {
+    const payload = (await jwt.verify(token, pem, {
       algorithms: ["RS256"],
-    }) as Promise<TokenPayload>;
+    })) as Promise<TokenPayload>;
 
     return payload;
-  },
-  String
-);
+  }, String);
 
 export const decodeToken = (token: string) => {
   if (
-    (serverEnv.CLIENT_ADDR.includes("dev") ||
-      serverEnv.CLIENT_ADDR.includes("staging")) &&
-    token.includes("deeto-dev")
+    /localhost|dev|staging/.test(serverEnv.CLIENT_ADDR) &&
+    token.startsWith("deeto-dev-")
   ) {
     const tryingToAuthenticateWith = token.split("deeto-dev-")[1];
 
@@ -66,7 +58,7 @@ export const decodeToken = (token: string) => {
               databasePath: "/",
               cognitoId: userAccount.cognitoId,
             })
-          : left("No user account")
+          : left("No user account found")
       )
     );
   } else {

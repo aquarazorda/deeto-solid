@@ -5,17 +5,21 @@ import server$ from "solid-start/server";
 import { createResource } from "solid-js";
 import { useServerContext } from 'solid-start';
 import { getOrElseW } from 'fp-ts/lib/Either';
+import { pipe } from 'fp-ts/lib/function';
+import { chain } from 'fp-ts/lib/TaskEither';
 
 export const getMe$ = () =>
   createResource(
     server$(async () => {
       const server = useServerContext();
       const token = getAccessToken(server.request.headers.get("cookie"));
-      
-      const res = await authorizer$(token);
-      const userE = await withAuthUserId(getByIdWithRolesAndAvatar)(res);
+      const res = pipe(
+        token,
+        chain(authorizer$),
+        chain(withAuthUserId(getByIdWithRolesAndAvatar))
+      );
 
-      return getOrElseW(() => undefined)(userE);
+      return getOrElseW(() => undefined)(await res());
     })
   );
 
