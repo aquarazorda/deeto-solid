@@ -12,8 +12,8 @@
     "@types/jwk-to-pem": "^2.0.1",
     "@types/node": "^20.2.5",
     "@types/uuid": "^9.0.1",
-    "@typescript-eslint/eslint-plugin": "^5.59.8",
-    "@typescript-eslint/parser": "^5.59.8",
+    "@typescript-eslint/eslint-plugin": "^5.59.9",
+    "@typescript-eslint/parser": "^5.59.9",
     "autoprefixer": "^10.4.14",
     "eslint": "^8.42.0",
     "eslint-plugin-solid": "^0.12.1",
@@ -26,7 +26,7 @@
     "vite": "^4.3.9"
   },
   "dependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.345.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.347.1",
     "@kobalte/core": "^0.9.6",
     "@kobalte/tailwindcss": "^0.6.5",
     "@modular-forms/solid": "^0.17.1",
