@@ -29,7 +29,7 @@ export default function ReferenceDashboard() {
                 Dashboard
               </A>
             </li>
-            <li>
+            {/* <li>
               <A
                 href="/reference/rewards"
                 class="flex flex-col items-center justify-center gap-1"
@@ -38,7 +38,7 @@ export default function ReferenceDashboard() {
                 <GiftIcon class="h-8 w-8" />
                 Rewards
               </A>
-            </li>
+            </li> */}
             <img
               src={user?.avatar?.url || ""}
               class="mt-auto rounded-no-left-top"
