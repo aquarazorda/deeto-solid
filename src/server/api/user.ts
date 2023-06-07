@@ -19,5 +19,5 @@ export const getMe$ = () =>
 
       return user;
     }),
-    { deferStream: true }
+    { deferStream: false }
   );

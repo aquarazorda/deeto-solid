@@ -1,5 +1,5 @@
-import { Match, Switch, lazy } from "solid-js";
-import { Navigate } from 'solid-start';
+import { Match, Show, Switch, lazy } from "solid-js";
+import { Navigate } from "solid-start";
 import { useUser } from "~/providers/userProvider";
 
 const LoginWithEmail = lazy(() => import("~/routes/login-with-email"));
@@ -8,23 +8,25 @@ const Reference = lazy(() => import("~/routes/reference/index"));
 const Vendor = lazy(() => import("~/routes/vendor"));
 
 function Home() {
-  const { user } = useUser();
-
+  const { user, isLoaded } = useUser();
+  
   return (
-    <Switch fallback={<LoginWithEmail />}>
-      <Match when={user?.isProspect}>
-        <Prospect />
-      </Match>
-      <Match when={user?.isReference}>
-        <Reference />
-      </Match>
-      <Match when={user?.isVendor}>
-        <Vendor />
-      </Match>
-      <Match when={user}>
-        <Navigate href="/" />
-      </Match>
-    </Switch>
+    <Show when={isLoaded()}>
+      <Switch fallback={<LoginWithEmail />}>
+        <Match when={user?.isProspect}>
+          <Prospect />
+        </Match>
+        <Match when={user?.isReference}>
+          <Reference />
+        </Match>
+        <Match when={user?.isVendor}>
+          <Vendor />
+        </Match>
+        <Match when={user}>
+          <Navigate href="/" />
+        </Match>
+      </Switch>
+    </Show>
   );
 }
 

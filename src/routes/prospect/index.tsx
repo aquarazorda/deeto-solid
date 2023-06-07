@@ -8,7 +8,7 @@ export default function ProspectDashboard() {
   let anchorRef: HTMLDivElement | undefined;
   const [t] = useI18n();
   const { user } = useUser();
-
+  
   return (
     <>
       <Title>{t.APP_NAME()} - Prospect</Title>
