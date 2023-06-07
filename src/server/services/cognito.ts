@@ -111,6 +111,7 @@ export const loginPasswordLess = (user: {
         cognito_id: user.cognitoUserId,
       })
     ),
+    // TODO setUserStatusToConfirmedIfPending && updateAccountLastLogin
     chainEitherK((res) => {
       if (
         !res.AuthenticationResult ||

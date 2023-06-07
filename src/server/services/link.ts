@@ -20,7 +20,7 @@ import type { InferModel} from "drizzle-orm";
 import { eq } from "drizzle-orm";
 import { MAGIC_LINK_EXPIRE_IN_MS } from "../utils/constants";
 import { left, right } from "fp-ts/lib/Either";
-import { getByIdWithRolesAndAvatar, isUserLocked } from "./authenticatedUser";
+import { getByIdWithRolesAndAvatar } from "./authenticatedUser";
 import { findByCognitoId } from "../cognito/authorizer";
 
 const getLinkForClient = (shortenId: string) => {
@@ -29,7 +29,7 @@ const getLinkForClient = (shortenId: string) => {
 
 const isLinkValid = (link: InferModel<typeof magicLinkSchema, "select">) => {
   return link.numberAvailableUses >= 1 &&
-    link.createdAt.getTime() + MAGIC_LINK_EXPIRE_IN_MS < Date.now()
+    link.createdAt.getTime() + MAGIC_LINK_EXPIRE_IN_MS > Date.now()
     ? right(link.authenticatedUserId)
     : left(ErrorsEnum.INVALID_MAGIC_LINK);
 };
@@ -53,6 +53,7 @@ export const useMagicLink = flow(
   tap(({ cognitoUserId }) => findByCognitoId(cognitoUserId)),
   bindTo("user"),
   bind('tokens', ({ user }) => loginPasswordLess(user)),
+  // todo DECREMENT
   chainEitherK(({ user, tokens }) => right({
     ...user,
     accessToken: tokens.AccessToken,

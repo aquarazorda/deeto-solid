@@ -4,6 +4,7 @@ import {
   fromNullable,
   getOrElseW,
   isRight,
+  left,
   right,
 } from "fp-ts/lib/Either";
 import {
@@ -32,6 +33,7 @@ import {
   REFRESH_TOKEN_SEPARATOR_ENCODED,
 } from "../utils/constants";
 import { initiateCustomAuth, loginPasswordLess } from "../services/cognito";
+import { isEmpty } from "fp-ts/lib/string";
 
 export type AuthorizerResponse = Either<string, TokenPayload>;
 
@@ -53,6 +55,18 @@ export const queryUserAccount = (userAccountId: string) =>
       () =>
         db.query.userAccounts.findFirst({
           where: eq(userAccounts.userAccountId, userAccountId),
+        }),
+      () => ErrorsEnum.USER_DONT_EXITS
+    ),
+    chainEitherK(fromNullable(ErrorsEnum.USER_DONT_EXITS))
+  );
+
+  export const queryUserAccountWithAuthenticatedUserId = (authenticatedUserId: string) =>
+  pipe(
+    tryCatch(
+      () =>
+        db.query.userAccounts.findFirst({
+          where: eq(userAccounts.authenticatedUserId, authenticatedUserId),
         }),
       () => ErrorsEnum.USER_DONT_EXITS
     ),
@@ -84,7 +98,7 @@ const refreshTokenFlow = (refreshTokenFull: Right<string>) => {
   );
 
   return pipe(
-    queryUserAccount(originalAuthenticatedUserId),
+    queryUserAccountWithAuthenticatedUserId(originalAuthenticatedUserId),
     bindTo("originalAuthenticatedUser"),
     bind("userToRefresh", ({ originalAuthenticatedUser }) =>
       getByIdWithRolesAndAvatar(originalAuthenticatedUser.authenticatedUserId)
@@ -123,7 +137,9 @@ const accessTokenFlow = (tokens: {
       },
       flow(
         getUserWithCognito,
-        chain(({ authenticatedUserId }) => getByIdWithRolesAndAvatar(authenticatedUserId)),
+        chain(({ authenticatedUserId }) =>
+          getByIdWithRolesAndAvatar(authenticatedUserId)
+        ),
         chainEitherK((user) =>
           right({
             ...user,
@@ -152,12 +168,12 @@ export const authorizer$ = (tokens: ReturnType<typeof getTokens>) => {
 
 export const getTokens = (cookie: string | null) =>
   pipe(parse(cookie || ""), (cookies) => ({
-    refreshToken: fromNullable(ErrorsEnum.MISSING_REFRESH_TOKEN)(
-      cookies["refreshToken"]
-    ),
-    accessToken: fromNullable(ErrorsEnum.MISSING_ACCESS_TOKEN)(
-      cookies["accessToken"]
-    ),
+    refreshToken: isEmpty(cookies["refreshToken"] ?? '')
+      ? left(ErrorsEnum.MISSING_REFRESH_TOKEN)
+      : right(cookies["refreshToken"]),
+    accessToken: isEmpty(cookies["accessToken"] ?? '')
+      ? left(ErrorsEnum.MISSING_REFRESH_TOKEN)
+      : right(cookies["accessToken"]),
   }));
 
 // const authorizer = middleware$(

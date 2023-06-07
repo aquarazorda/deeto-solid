@@ -1,5 +1,6 @@
 import type { JSX, ResourceActions } from "solid-js";
-import { createContext, useContext } from "solid-js";
+import { createContext, createEffect, on, useContext } from "solid-js";
+import { setCookie } from '~/env/utils';
 import { getMe$ } from "~/server/api/user";
 import type { getByIdWithRolesAndAvatar } from "~/server/services/authenticatedUser";
 import type { ExtractFromTE } from "~/types/utils";
@@ -23,6 +24,11 @@ type Props = {
 
 export default function UserProvider(props: Props) {
   const [res, { refetch, mutate }] = getMe$();
+
+  createEffect(on(res, () => {
+    setCookie('accessToken', res()?.accessToken);
+    setCookie('refreshToken', res()?.refreshToken);
+  }));
 
   return (
     <UserContext.Provider

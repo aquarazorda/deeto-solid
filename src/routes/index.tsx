@@ -3,6 +3,9 @@ import { Navigate } from 'solid-start';
 import { useUser } from "~/providers/userProvider";
 
 const LoginWithEmail = lazy(() => import("~/routes/login-with-email"));
+const Prospect = lazy(() => import("~/routes/prospect"));
+const Reference = lazy(() => import("~/routes/reference/index"));
+const Vendor = lazy(() => import("~/routes/vendor"));
 
 function Home() {
   const { user } = useUser();
@@ -10,13 +13,13 @@ function Home() {
   return (
     <Switch fallback={<LoginWithEmail />}>
       <Match when={user?.isProspect}>
-        <Navigate href="/prospect" />
+        <Prospect />
       </Match>
       <Match when={user?.isReference}>
-        <Navigate href="/reference" />
+        <Reference />
       </Match>
       <Match when={user?.isVendor}>
-        <Navigate href="/vendor" />
+        <Vendor />
       </Match>
       <Match when={user}>
         <Navigate href="/" />
