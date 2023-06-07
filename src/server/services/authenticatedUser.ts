@@ -8,7 +8,7 @@ import {
   tryCatch,
 } from "fp-ts/lib/TaskEither";
 import type { TokenPayload } from "../cognito/token";
-import { flow, pipe } from "fp-ts/lib/function";
+import { pipe } from "fp-ts/lib/function";
 import { ErrorsEnum } from "../enums/errors";
 import { UserStatusEnum } from "../enums/userStatus";
 import { left, right } from "fp-ts/lib/Either";
@@ -84,12 +84,3 @@ export const getAuthenticatedUserById = (authenticatedUserId: string) =>
     chain(fromNullable(ErrorsEnum.USER_DONT_EXITS)),
     chainEitherK((user) => user.userStatus === UserStatusEnum.LOCKED ? left(ErrorsEnum.USER_LOCKED) : right(user))
   );
-
-export const isUserLocked = flow(
-  getAuthenticatedUserById,
-  chainEitherK((user) =>
-    user.userStatus === UserStatusEnum.LOCKED
-      ? left(ErrorsEnum.USER_LOCKED)
-      : right(user)
-  )
-);
