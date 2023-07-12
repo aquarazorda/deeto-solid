@@ -14,7 +14,7 @@ export const getMe$ = () =>
       const ml = searchParams.get("ml");
       const tokens = getTokens(server.request.headers.get("cookie"));
       const res = await (ml ? useMagicLink(ml) : authorizer$(tokens))();
-      
+    
       const user = getOrElseW(() => undefined)(res);
 
       return user;

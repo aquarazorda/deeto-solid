@@ -21,7 +21,7 @@ export const getUserWithCognito = (tokenPayload: TokenPayload) => {
           authenticatedUsers.authenticatedUserId,
           tokenPayload?.authenticatedUserId
         ),
-        eq(authenticatedUsers.cognitoUserId, tokenPayload.sub)
+        eq(authenticatedUsers.cognitoUserId, tokenPayload.cognitoId)
       ),
     });
     // TODO

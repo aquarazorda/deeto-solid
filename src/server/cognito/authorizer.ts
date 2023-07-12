@@ -1,23 +1,7 @@
 import { parse } from "cookie";
-import type { Either, Right } from "fp-ts/lib/Either";
-import {
-  fromNullable,
-  getOrElseW,
-  isRight,
-  left,
-  right,
-} from "fp-ts/lib/Either";
-import {
-  bind,
-  bindTo,
-  fold,
-  tap,
-  tryCatch,
-  left as leftTE,
-  right as rightTE,
-} from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import { flow, pipe } from "fp-ts/lib/function";
-import { chain, chainEitherK } from "fp-ts/lib/TaskEither";
 import type { TokenPayload } from "./token";
 import { decodeToken } from "./token";
 import {
@@ -34,43 +18,44 @@ import {
 } from "../utils/constants";
 import { initiateCustomAuth, loginPasswordLess } from "../services/cognito";
 import { isEmpty } from "fp-ts/lib/string";
-
-export type AuthorizerResponse = Either<string, TokenPayload>;
+import { error$, middleware$ } from "@prpc/solid";
 
 export const findByCognitoId = (cognitoUserId: string) =>
   pipe(
-    tryCatch(
+    TE.tryCatch(
       () =>
         db.query.userAccounts.findFirst({
           where: eq(userAccounts.cognitoId, cognitoUserId),
         }),
       () => ErrorsEnum.COGNITO_USER_NOT_FOUND
     ),
-    chainEitherK(fromNullable(ErrorsEnum.COGNITO_USER_NOT_FOUND))
+    TE.chainEitherK(E.fromNullable(ErrorsEnum.COGNITO_USER_NOT_FOUND))
   );
 
-export const queryUserAccount = (userAccountId: string) =>
+export const queryUserAccount = (authenticatedUserId: string) =>
   pipe(
-    tryCatch(
-      () =>
-        db.query.userAccounts.findFirst({
-          where: eq(userAccounts.userAccountId, userAccountId),
-        }),
-      () => ErrorsEnum.USER_DONT_EXITS
-    ),
-    chainEitherK(fromNullable(ErrorsEnum.USER_DONT_EXITS))
-  );
-
-  export const queryUserAccountWithAuthenticatedUserId = (authenticatedUserId: string) =>
-  pipe(
-    tryCatch(
+    TE.tryCatch(
       () =>
         db.query.userAccounts.findFirst({
           where: eq(userAccounts.authenticatedUserId, authenticatedUserId),
         }),
       () => ErrorsEnum.USER_DONT_EXITS
     ),
-    chainEitherK(fromNullable(ErrorsEnum.USER_DONT_EXITS))
+    TE.chainEitherK(E.fromNullable(ErrorsEnum.USER_DONT_EXITS))
+  );
+
+export const queryUserAccountWithAuthenticatedUserId = (
+  authenticatedUserId: string
+) =>
+  pipe(
+    TE.tryCatch(
+      () =>
+        db.query.userAccounts.findFirst({
+          where: eq(userAccounts.authenticatedUserId, authenticatedUserId),
+        }),
+      () => ErrorsEnum.USER_DONT_EXITS
+    ),
+    TE.chainEitherK(E.fromNullable(ErrorsEnum.USER_DONT_EXITS))
   );
 
 const splitRefreshToken = (refreshTokenWithVendor: string) => {
@@ -92,18 +77,18 @@ const splitRefreshToken = (refreshTokenWithVendor: string) => {
   };
 };
 
-const refreshTokenFlow = (refreshTokenFull: Right<string>) => {
+const refreshTokenFlow = (refreshTokenFull: E.Right<string>) => {
   const { refreshToken, originalAuthenticatedUserId } = splitRefreshToken(
     refreshTokenFull.right
   );
 
   return pipe(
     queryUserAccountWithAuthenticatedUserId(originalAuthenticatedUserId),
-    bindTo("originalAuthenticatedUser"),
-    bind("userToRefresh", ({ originalAuthenticatedUser }) =>
+    TE.bindTo("originalAuthenticatedUser"),
+    TE.bind("userToRefresh", ({ originalAuthenticatedUser }) =>
       getByIdWithRolesAndAvatar(originalAuthenticatedUser.authenticatedUserId)
     ),
-    tap(() =>
+    TE.tap(() =>
       initiateCustomAuth({
         AuthFlow: "REFRESH_TOKEN_AUTH",
         AuthParameters: {
@@ -111,9 +96,9 @@ const refreshTokenFlow = (refreshTokenFull: Right<string>) => {
         },
       })
     ),
-    bind("tokens", ({ userToRefresh }) => loginPasswordLess(userToRefresh)),
-    chain(({ userToRefresh, tokens }) =>
-      rightTE({
+    TE.bind("tokens", ({ userToRefresh }) => loginPasswordLess(userToRefresh)),
+    TE.chain(({ userToRefresh, tokens }) =>
+      TE.right({
         refreshToken: tokens.RefreshToken,
         accessToken: tokens.AccessToken,
         ...userToRefresh,
@@ -123,28 +108,28 @@ const refreshTokenFlow = (refreshTokenFull: Right<string>) => {
 };
 
 const accessTokenFlow = (tokens: {
-  accessToken: Right<string>;
-  refreshToken: Either<ErrorsEnum, string>;
+  accessToken: E.Either<ErrorsEnum, string>;
+  refreshToken: E.Either<ErrorsEnum, string>;
 }) =>
   pipe(
     decodeToken(tokens.accessToken),
-    fold(
+    TE.fold(
       (err) => {
-        if (err === ErrorsEnum.UNAUTHORIZED && isRight(tokens.refreshToken)) {
+        if (err === ErrorsEnum.UNAUTHORIZED && E.isRight(tokens.refreshToken)) {
           return refreshTokenFlow(tokens.refreshToken);
         }
-        return leftTE(err);
+        return TE.left(err);
       },
       flow(
         getUserWithCognito,
-        chain(({ authenticatedUserId }) =>
+        TE.chain(({ authenticatedUserId }) =>
           getByIdWithRolesAndAvatar(authenticatedUserId)
         ),
-        chainEitherK((user) =>
-          right({
+        TE.chainEitherK((user) =>
+          E.right({
             ...user,
-            accessToken: tokens.accessToken.right,
-            refreshToken: getOrElseW(() => undefined)(tokens.refreshToken),
+            accessToken: E.getOrElseW(() => undefined)(tokens.accessToken),
+            refreshToken: E.getOrElseW(() => undefined)(tokens.refreshToken),
           })
         )
       )
@@ -152,56 +137,49 @@ const accessTokenFlow = (tokens: {
   );
 
 export const authorizer$ = (tokens: ReturnType<typeof getTokens>) => {
-  if (isRight(tokens.accessToken)) {
+  if (E.isRight(tokens.accessToken)) {
     return accessTokenFlow({
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
     });
   }
 
-  if (isRight(tokens.refreshToken)) {
+  if (E.isRight(tokens.refreshToken)) {
     return refreshTokenFlow(tokens.refreshToken);
   }
 
-  return leftTE(ErrorsEnum.UNAUTHORIZED);
+  return TE.left(ErrorsEnum.UNAUTHORIZED);
 };
 
 export const getTokens = (cookie: string | null) =>
   pipe(parse(cookie || ""), (cookies) => ({
-    refreshToken: isEmpty(cookies["refreshToken"] ?? '')
-      ? left(ErrorsEnum.MISSING_REFRESH_TOKEN)
-      : right(cookies["refreshToken"]),
-    accessToken: isEmpty(cookies["accessToken"] ?? '')
-      ? left(ErrorsEnum.MISSING_REFRESH_TOKEN)
-      : right(cookies["accessToken"]),
+    refreshToken: isEmpty(cookies["refreshToken"] ?? "")
+      ? E.left(ErrorsEnum.MISSING_REFRESH_TOKEN)
+      : E.right(cookies["refreshToken"]),
+    accessToken: isEmpty(cookies["accessToken"] ?? "")
+      ? E.left(ErrorsEnum.MISSING_REFRESH_TOKEN)
+      : E.right(cookies["accessToken"]),
   }));
 
-// const authorizer = middleware$(
-//   async ({ request$ }): Promise<AuthorizerResponse> => {
-//     return pipe(
-//       getTokens(request$.headers.get("cookie")),
-//       chain(decodeToken),
-//       chain(getUserWithCognito),
-//       chainEitherK(({ user, tokenPayload }) =>
-//         !user || user.userStatus === UserStatusEnum.LOCKED
-//           ? left("User not found or locked")
-//           : right(tokenPayload)
-//       )
-//     )();
+const getAccessTokenFromCookie = (cookie: string | null) =>
+  pipe(parse(cookie || ""), (cookies) =>
+    isEmpty(cookies["accessToken"] ?? "")
+      ? E.left(ErrorsEnum.MISSING_ACCESS_TOKEN)
+      : E.right(cookies["accessToken"] as string)
+  );
 
-//     // TODO
-//     // if (user?.vendorContact?.vendorContactId) {
-//     //   requestContext.vendorContactId = user?.vendorContact?.vendorContactId;
-//     // }
+export const authMiddleware = middleware$(
+  async ({ request$ }) => {
+    const user = await pipe(
+      getAccessTokenFromCookie(request$.headers.get("cookie")),
+      decodeToken,
+      TE.chain(getUserWithCognito)
+    )();
 
-//     // Authorizer response context values must be of type string, number, or boolean
-//     // const accountContactIds = user?.accountContacts?.map(
-//     //   (el) => el.accountContactId
-//     // );
-//     // if (accountContactIds?.length) {
-//     //   requestContext.accountContactIds = JSON.stringify(accountContactIds);
-//     // }
-//   }
-// );
+    if (E.isLeft(user)) {
+      return error$(ErrorsEnum.UNAUTHORIZED);
+    }
 
-// export default authorizer;
+    return user.right;
+  }
+);

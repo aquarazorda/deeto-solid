@@ -1,12 +1,15 @@
 import { tryCatch, map, chain, chainEitherK } from "fp-ts/lib/TaskEither";
 import jwt from "jsonwebtoken";
 import jwkToPem from "jwk-to-pem";
-import type { Right} from "fp-ts/lib/Either";
-import { left, right } from "fp-ts/lib/Either";
+import * as E from "fp-ts/lib/Either";
+import * as TE from "fp-ts/lib/TaskEither";
 import { serverEnv } from "~/env/server";
 import { pipe } from "fp-ts/lib/function";
-import { ErrorsEnum } from '../enums/errors';
-import { queryUserAccount } from './authorizer';
+import { ErrorsEnum } from "../enums/errors";
+import {
+  queryUserAccount,
+  queryUserAccountWithAuthenticatedUserId,
+} from "./authorizer";
 
 export type TokenPayload = {
   sub: string;
@@ -22,21 +25,31 @@ const loadJWK = (region: string, poolId: string) => {
     (res) => res.json() as Promise<{ keys: jwkToPem.JWK[] }>
   );
 
-  return tryCatch(() => res, () => ErrorsEnum.INTERNAL_SERVER_ERROR);
+  return tryCatch(
+    () => res,
+    () => ErrorsEnum.INTERNAL_SERVER_ERROR
+  );
 };
 
 const loadJWT = (token: string, pem: string) =>
-  tryCatch(async () => {
-    const payload = (await jwt.verify(token, pem, {
-      algorithms: ["RS256"],
-    })) as Promise<TokenPayload>;
+  tryCatch(
+    async () => {
+      const payload = (await jwt.verify(token, pem, {
+        algorithms: ["RS256"],
+      })) as Promise<TokenPayload>;
 
-    return payload;
-  }, () => ErrorsEnum.UNAUTHORIZED);
+      return payload;
+    },
+    () => ErrorsEnum.UNAUTHORIZED
+  );
 
-export const decodeToken = (tokenR: Right<string>) => {
-  const token = tokenR.right;
-  
+export const decodeToken = (tokenE: E.Either<ErrorsEnum, string>) => {
+  if (E.isLeft(tokenE)) {
+    return TE.left(ErrorsEnum.MISSING_ACCESS_TOKEN);
+  }
+
+  const token = tokenE.right;
+
   if (
     /localhost|dev|staging/.test(serverEnv.CLIENT_ADDR) &&
     token.startsWith("deeto-dev-")
@@ -44,17 +57,17 @@ export const decodeToken = (tokenR: Right<string>) => {
     const tryingToAuthenticateWith = token.split("deeto-dev-")[1];
 
     return pipe(
-      queryUserAccount(tryingToAuthenticateWith),
+      queryUserAccountWithAuthenticatedUserId(tryingToAuthenticateWith),
       chainEitherK((userAccount) =>
         userAccount
-          ? right({
+          ? E.right({
               sub: "deeto-vendor",
               authenticatedUserId: userAccount.authenticatedUserId,
               vendorId: userAccount.vendorId,
               databasePath: "/",
               cognitoId: userAccount.cognitoId,
             })
-          : left(ErrorsEnum.USER_DONT_EXITS)
+          : E.left(ErrorsEnum.USER_DONT_EXITS)
       )
     );
   } else {
