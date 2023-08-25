@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm';
 import { boolean, integer, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { vendorAccountLevelEnumPg } from '~/server/enums/vendor';
 import { accountSchema } from './account';
+import { vendorContactSchema } from './vendorContact';
 
 //   @HasOne(() => StatisticsDashboard, 'vendorId')
 //   statisticsDashboard: StatisticsDashboard;
@@ -46,5 +47,6 @@ export const vendorSchema = pgTable('Vendors', {
 })
 
 export const vendorRelations = relations(vendorSchema, ({ many }) => ({
-  accounts: many(accountSchema)
+  accounts: many(accountSchema),
+  vendorContacts: many(vendorContactSchema),
 }))

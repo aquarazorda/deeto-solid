@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import { integer, pgTable, uuid, varchar } from "drizzle-orm/pg-core";
 import { authenticatedUsers } from "./authenticatedUsers";
 import { accountSchema } from './account';
+import { vendorContactSchema } from './vendorContact';
 
 export const accountContactSchema = pgTable("AccountContacts", {
   accountContactId: uuid("accountContactId").primaryKey(),
@@ -17,7 +18,8 @@ export const accountContactSchema = pgTable("AccountContacts", {
   authenticatedUserId: uuid("authenticatedUserId").notNull().references(
     () => authenticatedUsers.authenticatedUserId
   ),
-  accountId: uuid("accountId").notNull().references(() => accountSchema.accountId)
+  accountId: uuid("accountId").notNull().references(() => accountSchema.accountId),
+  adminId: uuid("adminId").notNull().references(() => vendorContactSchema.vendorContactId),
 });
 
 
@@ -33,6 +35,10 @@ export const accountContactRelations = relations(
     account: one(accountSchema, {
       fields: [accountContactSchema.accountId],
       references: [accountSchema.accountId],
+    }),
+    admin: one(vendorContactSchema, {
+      fields: [accountContactSchema.adminId],
+      references: [vendorContactSchema.vendorContactId],
     })
   })
 );

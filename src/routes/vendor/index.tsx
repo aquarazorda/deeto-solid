@@ -9,5 +9,5 @@ export const routeData = () => {
 export default function VendorDashboard() {
   const data = useRouteData<typeof routeData>();
 
-  return <div>This is vendor dashboard</div>
+  return <div>This is vendor dashboard {String(data?.dashboard?.data)}</div>
 }

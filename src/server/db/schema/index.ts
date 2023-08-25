@@ -6,6 +6,7 @@ import * as accountContactSchema from './accountContact';
 import * as accountSchema from './account';
 import * as vendorSchema from './vendor';
 import * as magicLinkSchema from './magicLink';
+import * as vendorContact from './vendorContact';
 
 export default {
   ...usersSchema,
@@ -15,5 +16,6 @@ export default {
   ...accountContactSchema,
   ...accountSchema,
   ...vendorSchema,
-  ...magicLinkSchema
+  ...magicLinkSchema,
+  ...vendorContact
 }

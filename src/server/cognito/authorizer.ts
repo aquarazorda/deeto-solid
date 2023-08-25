@@ -2,7 +2,6 @@ import { parse } from "cookie";
 import * as E from "fp-ts/lib/Either";
 import * as TE from "fp-ts/lib/TaskEither";
 import { flow, pipe } from "fp-ts/lib/function";
-import type { TokenPayload } from "./token";
 import { decodeToken } from "./token";
 import {
   getByIdWithRolesAndAvatar,
@@ -18,7 +17,7 @@ import {
 } from "../utils/constants";
 import { initiateCustomAuth, loginPasswordLess } from "../services/cognito";
 import { isEmpty } from "fp-ts/lib/string";
-import { error$, middleware$ } from "@prpc/solid";
+import { middleware$ } from "@prpc/solid";
 
 export const findByCognitoId = (cognitoUserId: string) =>
   pipe(
@@ -168,6 +167,8 @@ const getAccessTokenFromCookie = (cookie: string | null) =>
       : E.right(cookies["accessToken"] as string)
   );
 
+export type AuthMiddlewareResponse = Awaited<ReturnType<typeof authMiddleware>>;
+
 export const authMiddleware = middleware$(
   async ({ request$ }) => {
     const user = await pipe(
@@ -176,10 +177,6 @@ export const authMiddleware = middleware$(
       TE.chain(getUserWithCognito)
     )();
 
-    if (E.isLeft(user)) {
-      return error$(ErrorsEnum.UNAUTHORIZED);
-    }
-
-    return user.right;
+    return user;
   }
 );

@@ -3,7 +3,6 @@ import {
   boolean,
   integer,
   pgTable,
-  text,
   timestamp,
   uuid,
   varchar,
@@ -12,6 +11,7 @@ import { UserStatusEnum, userStatusEnumPg } from "~/server/enums/userStatus";
 import { authenticatedUserPrivileges } from "./authenticatedUserPrivileges";
 import { avatarSchema } from "./avatar";
 import { accountContactSchema } from "./accountContact";
+import { vendorContactSchema } from './vendorContact';
 
 export const authenticatedUsers = pgTable("AuthenticatedUsers", {
   authenticatedUserId: uuid("authenticatedUserId").primaryKey(),
@@ -44,6 +44,10 @@ export const authenticatedUsersRelations = relations(
       references: [avatarSchema.avatarId],
     }),
     accountContacts: many(accountContactSchema),
+    vendorContact: one(vendorContactSchema, {
+      fields: [authenticatedUsers.authenticatedUserId],
+      references: [vendorContactSchema.authenticatedUserId],
+    })
   })
 );
 

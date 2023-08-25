@@ -7,8 +7,9 @@ export const getReferenceDashboard = query$({
   key: queryKeys.getReferenceDashboard,
   queryFn: ({ ctx$, payload }) => {
     const validateResult = searchReferencesRequestSchema.safeParse(payload);
+    console.log(ctx$);
     
     return true;
   },
-  middlewares: [authMiddleware]
+  middlewares: [authMiddleware],
 });
