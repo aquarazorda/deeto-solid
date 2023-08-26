@@ -24,24 +24,12 @@ export const getUserWithCognito = (tokenPayload: TokenPayload) => {
         eq(authenticatedUsers.cognitoUserId, tokenPayload.cognitoId)
       ),
       with: {
-        accountContacts: {
-          with: {
-            account: true,
-          }
-        },
-        vendorContact: {
-          with: {
-            vendor: true,
-          }
-        }
+        vendorContact: true
       }
     });
 
   return pipe(
-    tryCatch(() => query, (err) => {
-      console.log(err);
-      return ErrorsEnum.USER_DONT_EXITS;
-    }),
+    tryCatch(() => query, () => ErrorsEnum.USER_DONT_EXITS),
     chain(fromNullable(ErrorsEnum.USER_DONT_EXITS))
   );
 };

@@ -1,6 +1,7 @@
 import { pgTable, uuid, varchar } from 'drizzle-orm/pg-core';
 import { vendorSchema } from './vendor';
 import { relations } from 'drizzle-orm';
+import { accountContactSchema } from './accountContact';
 
 // @Column({
 //   type: DataType.STRING,
@@ -34,5 +35,5 @@ export const accountSchema = pgTable('Accounts', {
 });
 
 export const accountRelations = relations(accountSchema, ({ many }) => ({
-  accountContacts: many(accountSchema),
+  accountContacts: many(accountContactSchema),
 }))

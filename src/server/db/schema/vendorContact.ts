@@ -10,7 +10,7 @@ export const vendorContactSchema = pgTable('VendorContacts', {
   title: text('title'),
   // salesforceVendorToken
   authenticatedUserId: uuid('authenticatedUserId').references(() => authenticatedUsers.authenticatedUserId),
-  vendorId: uuid('vendorId').references(() => vendorSchema.vendorId),
+  vendorId: uuid('vendorId').notNull().references(() => vendorSchema.vendorId),
 })
 
 export const vendorContactRelations = relations(vendorContactSchema, ({ one, many }) => ({

@@ -19,7 +19,13 @@ import { I18nProvider } from "./env/i18n";
 import UserProvider from "./providers/userProvider";
 import { FullPageSpinner } from "./components/loaders/Spinner";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnMount: false
+    }
+  }
+});
 
 export default function Root() {
   return (
