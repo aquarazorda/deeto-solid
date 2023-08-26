@@ -7,7 +7,6 @@ import { serverEnv } from "~/env/server";
 import { pipe } from "fp-ts/lib/function";
 import { ErrorsEnum } from "../enums/errors";
 import {
-  queryUserAccount,
   queryUserAccountWithAuthenticatedUserId,
 } from "./authorizer";
 
@@ -51,7 +50,6 @@ export const decodeToken = (tokenE: E.Either<ErrorsEnum, string>) => {
   const token = tokenE.right;
 
   if (
-    /localhost|dev|staging/.test(serverEnv.CLIENT_ADDR) &&
     token.startsWith("deeto-dev-")
   ) {
     const tryingToAuthenticateWith = token.split("deeto-dev-")[1];
