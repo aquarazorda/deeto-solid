@@ -18,6 +18,9 @@ import {
 import { initiateCustomAuth, loginPasswordLess } from "../services/cognito";
 import { isEmpty } from "fp-ts/lib/string";
 import { middleware$ } from "@prpc/solid";
+import server$ from "solid-start/server";
+import { useServerContext } from "solid-start";
+import type { ExtractFromTE } from "~/types/utils";
 
 export const findByCognitoId = (cognitoUserId: string) =>
   pipe(
@@ -169,14 +172,37 @@ const getAccessTokenFromCookie = (cookie: string | null) =>
 
 export type AuthMiddlewareResponse = Awaited<ReturnType<typeof authMiddleware>>;
 
-export const authMiddleware = middleware$(
-  async ({ request$ }) => {
-    const user = await pipe(
-      getAccessTokenFromCookie(request$.headers.get("cookie")),
-      decodeToken,
-      TE.chain(getUserWithCognito)
-    )();
+export const authMiddleware = middleware$(async ({ request$ }) => {
+  const user = await pipe(
+    getAccessTokenFromCookie(request$.headers.get("cookie")),
+    decodeToken,
+    TE.chain(getUserWithCognito)
+  )();
 
-    return user;
-  }
-);
+  return user;
+});
+
+const getUserWithCookies = (cookieHeaders: string | null) =>
+  pipe(
+    getAccessTokenFromCookie(cookieHeaders),
+    decodeToken,
+    TE.chain(getUserWithCognito)
+  );
+
+type AuthMiddlewareInput<T> = (
+  teUser: AuthMiddlewareResponse$
+) => TE.TaskEither<ErrorsEnum, T>;
+
+export const withAuth$ = <T>(fn: AuthMiddlewareInput<T>) => () =>
+  server$((fn: AuthMiddlewareInput<T>) => {
+    const serverContext = useServerContext();
+
+    return pipe(
+      getUserWithCookies(serverContext.request.headers.get("cookie")),
+      TE.chain(fn)
+    )();
+  })(fn);
+
+export type AuthMiddlewareResponse$ = ExtractFromTE<
+  ReturnType<typeof getUserWithCookies>
+>;

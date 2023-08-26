@@ -1,20 +1,22 @@
-import { query$ } from '@prpc/solid';
-import queryKeys from '../queryKeys';
-import { authMiddleware } from '../cognito/authorizer';
-import { getAllReferences } from '../services/accountContacts';
-import { map } from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/function';
-import { fromEither, chain } from 'fp-ts/lib/TaskEither';
+import {
+  withAuth$,
+} from "../cognito/authorizer";
+import { getAllReferences } from "../services/accountContacts";
 
-export const getReferenceDashboard = query$({
-  key: queryKeys.getReferenceDashboard,
-  queryFn: ({ ctx$ }) => {
-    return pipe(
-      ctx$,
-      map(({ vendorContact }) => ({ vendorId: vendorContact.vendorId})),
-      fromEither,
-      chain(getAllReferences)
-    )();
-  },
-  middlewares: [authMiddleware],
-});
+export const getReferenceDashboard = withAuth$(({ vendorContact }) =>
+  getAllReferences({ vendorId: vendorContact.vendorId })
+);
+
+// export const getReferenceDashboard = query$({
+//   key: queryKeys.getReferenceDashboard,
+//   queryFn: ({ ctx$ }) => {
+//     const sda = (context: AuthMiddlewareResponse$) => pipe(
+//       ctx$,
+//       map(({ vendorContact }) => ({ vendorId: vendorContact.vendorId})),
+//       fromEither,
+//       chain(getAllReferences)
+//     );
+//     return true;
+//   },
+//   middlewares: [authMiddleware],
+// });
