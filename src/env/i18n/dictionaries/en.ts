@@ -6,4 +6,5 @@ export const en = {
   CONTINUTE: "Continue",
   MY_PROFILE: "My profile",
   SETTINGS: "Settings",
+  REFERENCES: "References"
 }

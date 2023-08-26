@@ -34,6 +34,10 @@ export const accountSchema = pgTable('Accounts', {
   vendorId: uuid('vendorId').notNull().references(() => vendorSchema.vendorId),
 });
 
-export const accountRelations = relations(accountSchema, ({ many }) => ({
+export const accountRelations = relations(accountSchema, ({ one, many }) => ({
   accountContacts: many(accountContactSchema),
+  vendor: one(vendorSchema, {
+    fields: [accountSchema.vendorId],
+    references: [vendorSchema.vendorId],
+  })
 }))

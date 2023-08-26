@@ -5,7 +5,6 @@ import { useUser } from "~/providers/userProvider";
 const LoginWithEmail = lazy(() => import("~/routes/login-with-email"));
 const Prospect = lazy(() => import("~/routes/prospect/index"));
 const Reference = lazy(() => import("~/routes/reference/index"));
-const Vendor = lazy(() => import("~/routes/vendor/index"));
 
 function Home() {
   const { user, isLoaded } = useUser();
@@ -20,7 +19,7 @@ function Home() {
           <Reference />
         </Match>
         <Match when={user?.isVendor}>
-          <Vendor />
+          <Navigate href="/vendor" />
         </Match>
         <Match when={user}>
           <Navigate href="/" />

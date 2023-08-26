@@ -10,7 +10,8 @@ module.exports = {
         "no-left-top": "0rem 2.5rem 2.5rem",
       },
       boxShadow: {
-        'primary-input': "rgba(59, 0, 135, 0.22) 0px 0px 0.625rem inset" 
+        'primary-input': "rgba(59, 0, 135, 0.22) 0px 0px 0.625rem inset",
+        'ref-box': "rgba(0, 0, 0, 0.1) 0px 0.25rem 0.375rem -0.063rem, rgba(0, 0, 0, 0.05) 0px 0.125rem 0.25rem -0.125rem"
       },
       animation: {
         'contentShow': 'contentShow 250ms ease-out',
@@ -64,12 +65,16 @@ module.exports = {
       "white": "#FFFFFF",
       "primary-purple": "#481453",
       "primary-yellow": "#ffc400",
-      "yellow-bg": "rgba(255, 255, 255, 0.65)"
+      "purple-dark": "#2e1334",
+      "yellow-bg": "rgba(255, 255, 255, 0.65)",
+      "black": "black",
+      "white-900": "#F9F8FA",
+      "secondary-green": "#00ba55"
     },
     fontFamily: {
       sans: "DM Sans, sans-serif",
       inter: "Inter, sans-serif",
-    }
+    },
   },
   plugins: [
     require("@kobalte/tailwindcss")
