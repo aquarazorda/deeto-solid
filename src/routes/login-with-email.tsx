@@ -1,5 +1,5 @@
 import { Button, TextField } from "@kobalte/core";
-import { getOrElse, isLeft, isRight } from "fp-ts/lib/Either";
+import { getOrElse, isRight } from "fp-ts/lib/Either";
 import { Show } from "solid-js";
 import { Title } from "solid-start";
 import { useI18n } from "~/env/i18n";
