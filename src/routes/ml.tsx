@@ -1,7 +1,7 @@
 import { FullPageSpinner } from "~/components/loaders/Spinner";
 import { Suspense, createEffect } from "solid-js";
 import { createServerData$ } from "solid-start/server";
-import { Navigate, useRouteData, useSearchParams } from "solid-start";
+import { useRouteData, useSearchParams } from "solid-start";
 import { useMagicLink } from "~/server/services/link";
 import { isRight, right } from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
@@ -30,15 +30,18 @@ export default function MagicLinkPage() {
 
   createEffect(() => {
     const res = data();
+    
     if(res && isRight(res)) {
       setCookie('accessToken', res.right.accessToken);
       setCookie('refreshToken', res.right.refreshToken);
+      window.location.href = '/';
     };
+    
   });
 
   return <Suspense fallback={<FullPageSpinner />}>
     <ShowEither either={data()}>
-      {() => <Navigate href={'/'} />}
+      {() => <></>}
     </ShowEither>
   </Suspense>;
 }
