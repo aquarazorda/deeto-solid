@@ -1,28 +1,44 @@
-import { FullPageSpinner } from '~/components/loaders/Spinner';
-import { onMount } from 'solid-js';
-import { createServerMultiAction$ } from 'solid-start/server';
-import { useSearchParams } from 'solid-start';
-import { useMagicLink } from '~/server/services/link';
-import { isRight } from 'fp-ts/lib/Either';
+import { FullPageSpinner } from "~/components/loaders/Spinner";
+import { Suspense, createEffect } from "solid-js";
+import { createServerData$ } from "solid-start/server";
+import { Navigate, useRouteData, useSearchParams } from "solid-start";
+import { useMagicLink } from "~/server/services/link";
+import { isRight, right } from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import { chainEitherK } from "fp-ts/lib/TaskEither";
+import { ShowEither } from '~/components/fp-ts/ShowEither';
+import { setCookie } from '~/env/utils';
+
+export const routeData = () => {
+  const [search] = useSearchParams();
+
+  return createServerData$((id: string) => pipe(
+    useMagicLink(id),
+    chainEitherK(({ accessToken, refreshToken }) =>
+      right({
+        accessToken,
+        refreshToken,
+      })
+    )
+  )(), {
+    key: () => search.id
+  });
+};
 
 export default function MagicLinkPage() {
-  const [search] = useSearchParams();
-  const [, act] = createServerMultiAction$(async (id?: string) => {
-    const response = new Response(null, { status: 302, headers: { Location: '/'} });
+  const data = useRouteData<typeof routeData>();
 
-    if (id) {
-      const res = await useMagicLink(id)();
-  
-      if (isRight(res)) {
-        response.headers.append("Set-Cookie", `accessToken=${res.right.accessToken}; Path=/;`);
-        response.headers.append("Set-Cookie", `refreshToken=${res.right.refreshToken}; Path=/;`);
-      }
-    }
-  
-    return response;
+  createEffect(() => {
+    const res = data();
+    if(res && isRight(res)) {
+      setCookie('accessToken', res.right.accessToken);
+      setCookie('refreshToken', res.right.refreshToken);
+    };
   });
 
-  onMount(() => act(search.id));
-
-  return <FullPageSpinner />;
+  return <Suspense fallback={<FullPageSpinner />}>
+    <ShowEither either={data()}>
+      {() => <Navigate href={'/'} />}
+    </ShowEither>
+  </Suspense>;
 }
