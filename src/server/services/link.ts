@@ -24,7 +24,7 @@ import { getByIdWithRolesAndAvatar } from "./authenticatedUser";
 import { findByCognitoId } from "../cognito/authorizer";
 
 const getLinkForClient = (shortenId: string) => {
-  return `${serverEnv.CLIENT_ADDR}/?ml=${shortenId}`;
+  return `${serverEnv.CLIENT_ADDR}/ml?id=${shortenId}`;
 };
 
 const isLinkValid = (link: InferModel<typeof magicLinkSchema, "select">) => {
@@ -88,8 +88,7 @@ const createMagicLink =
 
 export const generateLink = (
   email: string,
-  destination: string,
-  authenticatedUserId?: string
+  destination: string
 ) => {
   // TODO add logic for email sending
   return pipe(

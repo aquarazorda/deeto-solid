@@ -22,9 +22,9 @@ import { FullPageSpinner } from "./components/loaders/Spinner";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnMount: false
-    }
-  }
+      refetchOnMount: false,
+    },
+  },
 });
 
 export default function Root() {
@@ -55,15 +55,15 @@ export default function Root() {
         <I18nProvider>
           <QueryProvider queryClient={queryClient}>
             <Suspense fallback={<FullPageSpinner />}>
-              <UserProvider>
-                <ErrorBoundary>
+              <ErrorBoundary>
+                <UserProvider>
                   <Routes>
                     <Suspense fallback={<FullPageSpinner />}>
                       <FileRoutes />
                     </Suspense>
                   </Routes>
-                </ErrorBoundary>
-              </UserProvider>
+                </UserProvider>
+              </ErrorBoundary>
             </Suspense>
           </QueryProvider>
         </I18nProvider>

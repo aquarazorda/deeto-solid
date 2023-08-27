@@ -5,6 +5,7 @@ import Avatar from "../../../avatar";
 import { useI18n } from "~/env/i18n";
 import { MenuItem } from "./MenuItem";
 import Settings from "./items/Settings";
+import { useUser } from '~/providers/userProvider';
 
 type Props = {
   anchorRef?: () => HTMLDivElement | undefined;
@@ -12,6 +13,7 @@ type Props = {
 
 export default function ProspectMenu(props: Props) {
   const [t] = useI18n();
+  const { user } = useUser();
 
   return (
     <div class="flex flex-col gap-6">
@@ -36,7 +38,7 @@ export default function ProspectMenu(props: Props) {
         >
           <Settings />``
         </MenuItem>
-        <Avatar />
+        <Avatar firstName={user!.firstName} lastName={user!.lastName} />
       </div>
     </div>
   );

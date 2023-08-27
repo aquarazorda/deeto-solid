@@ -1,6 +1,4 @@
 import { Button, TextField } from "@kobalte/core";
-import { getOrElse, isRight } from "fp-ts/lib/Either";
-import { Show } from "solid-js";
 import { Title } from "solid-start";
 import { useI18n } from "~/env/i18n";
 import { loginWithEmailForm } from "~/server/api/auth";
@@ -8,7 +6,7 @@ import { loginWithEmailForm } from "~/server/api/auth";
 export default function LoginWithEmail() {
   const [t] = useI18n();
 
-  const [submitting, { Form }] = loginWithEmailForm();
+  const [, { Form }] = loginWithEmailForm();
 
   const FormTemplate = () => (
     <Form class="flex w-1/2 flex-col gap-6 rounded-no-left-top bg-yellow-bg p-12">
@@ -37,12 +35,7 @@ export default function LoginWithEmail() {
         {t.APP_NAME()} - {t.LOGIN_PAGE_TITLE()}
       </Title>
       <div class="flex h-screen flex-col items-center justify-center overflow-hidden bg-yellow-red bg-cover bg-no-repeat">
-        <Show
-          when={submitting.result && isRight(submitting.result)}
-          fallback={<FormTemplate />}
-        >
-          {getOrElse(() => "No magic link for ya ;(")(submitting.result!)}
-        </Show>
+        <FormTemplate />
       </div>
     </>
   );

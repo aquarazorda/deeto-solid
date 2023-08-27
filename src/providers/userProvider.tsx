@@ -3,10 +3,10 @@ import { createContext, createEffect, createMemo, on, useContext } from "solid-j
 import { useSearchParams } from "solid-start";
 import { setCookie } from "~/env/utils";
 import { getMe$ } from "~/server/api/user";
-import type { getByIdWithRolesAndAvatar } from "~/server/services/authenticatedUser";
+import type { authorizer$ } from '~/server/cognito/authorizer';
 import type { ExtractFromTE } from "~/types/utils";
 
-type User = ExtractFromTE<ReturnType<typeof getByIdWithRolesAndAvatar>>;
+type User = ExtractFromTE<ReturnType<typeof authorizer$>>;
 
 type UserContext = ResourceActions<User | undefined> & {
   user?: User;

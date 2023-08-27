@@ -46,11 +46,7 @@ export const getByIdWithRolesAndAvatar = (authenticatedUserId: string) => {
             account: true,
           },
         },
-        vendorContact: {
-          with: {
-            vendor: true,
-          }
-        }
+        vendorContact: true
       },
     })
     .then((user) => {

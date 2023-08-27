@@ -1,10 +1,11 @@
-import {
-  withAuth$,
-} from "../cognito/authorizer";
+import { withAuth$ } from "~/shared/authorizer";
 import { getAllReferences } from "../services/accountContacts";
+import server$ from "solid-start/server";
 
-export const getReferenceDashboard = withAuth$(({ vendorContact }) =>
-  getAllReferences({ vendorId: vendorContact.vendorId })
+export const getReferenceDashboard = server$(() =>
+  withAuth$(({ vendorContact }) =>
+    getAllReferences({ vendorId: vendorContact.vendorId })
+  )
 );
 
 // export const getReferenceDashboard = query$({
