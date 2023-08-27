@@ -1,7 +1,5 @@
 import type { Accessor, JSX, ResourceActions } from "solid-js";
-import { createContext, createEffect, createMemo, on, useContext } from "solid-js";
-import { useSearchParams } from "solid-start";
-import { setCookie } from "~/env/utils";
+import { createContext, createMemo, useContext } from "solid-js";
 import { getMe$ } from "~/server/api/user";
 import type { authorizer$ } from '~/server/cognito/authorizer';
 import type { ExtractFromTE } from "~/types/utils";
@@ -26,19 +24,7 @@ type Props = {
 
 export default function UserProvider(props: Props) {
   const [res, { refetch, mutate }] = getMe$();
-  const [search, setSearch] = useSearchParams();
   const isLoaded = createMemo(() => !res.loading);
-
-  createEffect(
-    on(res, () => {
-      setCookie("accessToken", res()?.accessToken);
-      setCookie("refreshToken", res()?.refreshToken);
-      setSearch({
-        ...search,
-        ml: undefined,
-      });
-    })
-  );
 
   return (
     <UserContext.Provider

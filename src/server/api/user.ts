@@ -3,6 +3,7 @@ import { createResource } from "solid-js";
 import { useServerContext } from 'solid-start';
 import { getOrElseW } from 'fp-ts/lib/Either';
 import { authorizer$, getTokens } from '../cognito/authorizer';
+import { setCookie } from '~/env/utils';
 
 export const getMe$ = () =>
   createResource(
@@ -14,5 +15,8 @@ export const getMe$ = () =>
       
       return user;
     }),
-    { deferStream: false }
+    { deferStream: false, onHydrated: (_, user) => {
+      setCookie('accessToken', user.value?.accessToken)
+      setCookie('refreshToken', user.value?.refreshToken)
+    }}
   );

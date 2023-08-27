@@ -1,5 +1,5 @@
 import { left } from "fp-ts/lib/Either";
-import { For, Suspense, createEffect, createResource } from "solid-js";
+import { For, Suspense, createResource } from "solid-js";
 import { Title, useRouteData } from "solid-start";
 import Avatar from "~/components/avatar";
 import { ShowEither } from "~/components/fp-ts/ShowEither";
